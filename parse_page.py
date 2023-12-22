@@ -1,20 +1,22 @@
 from __future__ import annotations
-from functions import *
-from function_marker import function_marker
+
 from typing import *
-import inspect
+
+from function_marker import function_marker
+from functions import *
 
 
 class MarkDownSection:
     sections: List[Union[str, MarkDownSection]]
+    name: str
 
-    def __init__(self):
+    def __init__(self, name: str):
         self.sections = []
 
     def add_section(self, section: Union[str, MarkDownSection]):
         self.sections.append(section)
 
-    def markdown(self):
+    def markdown(self) -> str:
         return ''.join(
             [section.markdown() if isinstance(section, MarkDownSection) else section for section in self.sections])
 
@@ -25,7 +27,7 @@ class Reader:
 
     def __init__(self):
         self.current_section = "default"
-        self.sections = {self.current_section: MarkDownSection()}
+        self.sections = {self.current_section: MarkDownSection("default")}
 
     def add_python_file(self, file_name: str, section_name: str):
         s = "```python\n"
@@ -35,31 +37,38 @@ class Reader:
                 s += line
         s += "```\n"
         self.get_section(section_name).add_section(s)
+
     def change_section(self, section_name: str):
+        if section_name not in self.sections:
+            self.sections[section_name] = MarkDownSection(section_name)
         self.current_section = section_name
 
-    def get_section(self, section_name: str):
+    def get_section(self, section_name: str) -> MarkDownSection:
+        """
+        if section_name is empty we return the current section, otherwise we return the section with the given name
+        if it doesn't exist, we create it
+        """
         if section_name == '':
             return self.get_current_section()
         elif section_name in self.sections:
             return self.sections[section_name]
         else:
-            section = MarkDownSection()
+            section = MarkDownSection(section_name)
             self.sections[section_name] = section
             return section
 
     def write_section_to_file(self, section_name: str = '', file_name: str = ''):
+
         if section_name == '':
             section_name = self.current_section
         if file_name == '':
             file_name = section_name + '.md'
+        if section_name not in self.sections:
+            raise Exception("section not found")
         with open(file_name, 'w') as f:
-            print("hello world")
             f.write(self.sections[section_name].markdown())
 
     def get_current_section(self) -> MarkDownSection:
-        if self.current_section not in self.sections:
-            self.sections[self.current_section] = MarkDownSection()
         return self.sections[self.current_section]
 
     markdown_string("parse_line")
@@ -82,7 +91,6 @@ class Reader:
 
     def read_code(self, source_file: str):
         function_names = ["write_section", "markdown_string", "code_section", "end_code"]
-        code_section("defined_functions")
         code_section
         with open(source_file, 'r') as f:
             lines = f.readlines()
@@ -126,6 +134,7 @@ class Reader:
                     should_end = [False]
 
                     function_marker
+
                     def end_code(inner_section_name: str = ''):
                         # print(inner_section_name, section_name)
                         if inner_section_name == section_name:
@@ -163,7 +172,6 @@ class Reader:
                             s += new_line[indent:]
                     assert False, 'code_section must be followed by an end_code_section with matching section name'
 
-                end_code("defined_functions")
                 markdown_string
                 """
                 We now strip the indent from the line and check if it starts with one of our functions. If it does we
@@ -190,7 +198,6 @@ class Reader:
                 Here's a code dump of the functions we defined. Don't worry about understanding them right now. We will
                 go through them in detail later.
                 """
-                write_section("defined_functions")
 
 
 # def strip_indent(line: str, num_indents: int):
@@ -209,11 +216,7 @@ class Reader:
 
 
 if __name__ == '__main__':
-    reader = Reader()
-    reader.add_python_file('functions.py', 'defined_functions')
-    reader.read_code('parse_page.py')
-    print(reader.get_current_section().markdown())
-    reader.write_section_to_file()
+    pass
     set_current_section("start")
     code_section("recursive_1", skip_comments=True)
     code_section("recursive_2", skip_blog_stuff=False)
@@ -255,9 +258,8 @@ if __name__ == '__main__':
     it would be possible to use actual python code as flags. We do this in the following fashion (sadly I had to actually
     use regualar markdown for this section since you can't use the flags until you have defined them):
     """
-    """ 
+    """
     The next challenge is actually reading the code.
     """
     write_section("reading_code")
-    # write_section('defined_functions')
-    reader.write_section_to_file()  # print_section("recursive_2")  # code_section("hello_world")  # # print("hello world")  # end_code("hello_world")  # write_section("hello_world")
+    write_section('defined_functions')
