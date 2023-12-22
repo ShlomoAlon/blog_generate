@@ -6,7 +6,7 @@ def write_section(section_name: str, target_section_name: str = ''):
     pass
 
 
-def markdown_string(tag: str = '', keep_indent: bool = False):
+def markdown_string(tag: str = '', keep_indent: bool = False, header_level: int = 0,table_of_contents: bool = False):
     pass
 
 

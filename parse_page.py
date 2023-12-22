@@ -1,24 +1,59 @@
 from __future__ import annotations
 
-from typing import *
-
 from function_marker import function_marker
 from functions import *
 
 
 class MarkDownSection:
     sections: List[Union[str, MarkDownSection]]
+    header_level: int = 0
+    table_of_contents: bool = False
     name: str
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, header_level: int = 0, table_of_contents: bool = False):
         self.sections = []
+        self.header_level = header_level
+        self.table_of_contents = table_of_contents
+        self.name = name
+        if table_of_contents and header_level == 0:
+            self.header_level = 3
+
+    def set_table_of_contents(self, table_of_contents: bool):
+        if table_of_contents:
+            self.table_of_contents = True
+            if self.header_level == 0:
+                self.header_level = 3
+
+    def set_header_level(self, header_level: int):
+        if header_level != 0:
+            self.header_level = header_level
 
     def add_section(self, section: Union[str, MarkDownSection]):
         self.sections.append(section)
 
     def markdown(self) -> str:
-        return ''.join(
+        result = ''
+        if self.table_of_contents:
+            assert self.header_level != 0, 'if table of contents is true the header level must be set'
+            result += "<a id='" + self.name.replace(' ', '-') + "'></a>\n"
+
+        if self.header_level != 0:
+            result += '#' * self.header_level + ' ' + self.name + '\n'
+        result += ''.join(
             [section.markdown() if isinstance(section, MarkDownSection) else section for section in self.sections])
+        return result
+
+    def markdown_table_of_contents(self) -> str:
+        result = ''
+        temp_list = [section.markdown_table_of_contents() for section in self.sections if \
+                     isinstance(section, MarkDownSection) and section.table_of_contents]
+        if self.table_of_contents:
+            result += f"- [{self.name}](#{self.name.replace(' ', '-')})\n"
+            result += '\n    '
+            result += '\n    '.join(temp_list)
+        else:
+            result += '\n'.join(temp_list)
+        return result
 
 
 class Reader:
@@ -57,7 +92,7 @@ class Reader:
             self.sections[section_name] = section
             return section
 
-    def write_section_to_file(self, section_name: str = '', file_name: str = ''):
+    def write_section_to_file(self, section_name: str = '', file_name: str = '', table_of_contents: bool = True):
 
         if section_name == '':
             section_name = self.current_section
@@ -66,6 +101,10 @@ class Reader:
         if section_name not in self.sections:
             raise Exception("section not found")
         with open(file_name, 'w') as f:
+            if table_of_contents:
+                f.write("# Table of Contents\n")
+                f.write(self.sections[section_name].markdown_table_of_contents())
+                f.write("\n\n")
             f.write(self.sections[section_name].markdown())
 
     def get_current_section(self) -> MarkDownSection:
@@ -89,25 +128,41 @@ class Reader:
 
     set_current_section("reading_code")
 
+    def write_section(self, section_name: str, target_section_name: str = ''):
+
+        if target_section_name == '':
+            self.get_current_section().add_section(self.get_section(section_name))
+        else:
+            self.get_section(target_section_name).add_section(self.get_section(section_name))
+
     def read_code(self, source_file: str):
         function_names = ["write_section", "markdown_string", "code_section", "end_code"]
         code_section
-        with open(source_file, 'r') as f:
+        with (open(source_file, 'r') as f):
             lines = f.readlines()
             for line_number, line in enumerate(lines):
                 end_code
                 function_marker
 
                 def exec_write_section(section_name: str, target_section_name: str = ''):
-                    if (target_section_name == ''):
-                        self.get_current_section().add_section(self.get_section(section_name))
-                    else:
-                        self.get_section(target_section_name).add_section(self.get_section(section_name))
+                    self.write_section(section_name, target_section_name)
+                    # if target_section_name == '':
+                    #     self.get_current_section().add_section(self.get_section(section_name))
+                    # else:
+                    #     self.get_section(target_section_name).add_section(self.get_section(section_name))
 
                 function_marker
 
-                def exec_markdown_string(tag: str = '', keep_indent: bool = False):
+                def exec_markdown_string(tag: str = '', keep_indent: bool = False, header_level: int = 0,
+                                         table_of_contents: bool = False):
                     section = self.get_section(tag)
+                    if tag == '':
+                        assert header_level == 0 and table_of_contents is False, \
+                            'if the tag is empty the header level must be 0 and table of contents must be false'
+                    section.set_header_level(header_level)
+                    section.set_table_of_contents(table_of_contents)
+
+
                     s = ''
                     indent = line.index('markdown_string')
                     assert 'markdown_string' in line, 'this line should have markdown_string in it'
@@ -124,8 +179,10 @@ class Reader:
 
                 function_marker
 
-                def exec_set_current_section(section_name: str):
+                def exec_set_current_section(section_name: str, header_level: int = 0, table_of_contents: bool = False):
                     self.change_section(section_name)
+                    self.get_current_section().set_header_level(header_level)
+                    self.get_current_section().set_table_of_contents(table_of_contents)
 
                 function_marker
 
@@ -136,7 +193,6 @@ class Reader:
                     function_marker
 
                     def end_code(inner_section_name: str = ''):
-                        # print(inner_section_name, section_name)
                         if inner_section_name == section_name:
                             should_end[0] = True
 
@@ -147,12 +203,9 @@ class Reader:
                     s += "```python\n"
                     for new_line in lines[line_number + 1:]:
                         if new_line.strip().startswith('end_code'):
-                            # print(new_line)
                             parsed_line = self.parse_line(new_line)
-                            # print(parsed_line)
                             exec(parsed_line)
                             # exec(self.parse_line(new_line))
-                            # print(new_line)
                             if should_end[0]:
                                 s += "```\n"
                                 section.add_section(s)
@@ -217,7 +270,7 @@ class Reader:
 
 if __name__ == '__main__':
     pass
-    set_current_section("start")
+    set_current_section("start", header_level=1, table_of_contents=True)
     code_section("recursive_1", skip_comments=True)
     code_section("recursive_2", skip_blog_stuff=False)
     # This starts a code block tagged with the name "babies first code block".
@@ -264,7 +317,7 @@ if __name__ == '__main__':
     We do this in the following fashion. Note: this is in another file.
     """
     write_section('defined_functions')
-    markdown_string
+    markdown_string("Warning", table_of_contents=True)
     """
     These functions do not do anything. They are just dummy functions that the user can use as flags. Since we don't
     want these flags to affect the code we are writing. These flags only become active when we are generating the
@@ -272,4 +325,5 @@ if __name__ == '__main__':
     
     The next challenge is actually reading the code.
     """
+    write_section("Warning")
     write_section("reading_code")
