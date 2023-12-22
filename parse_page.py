@@ -220,22 +220,24 @@ if __name__ == '__main__':
     set_current_section("start")
     code_section("recursive_1", skip_comments=True)
     code_section("recursive_2", skip_blog_stuff=False)
-    # this starts a code block tagged with the name recursive
-    # you could of course not use a tag and it would add it to the current section
+    # This starts a code block tagged with the name "babies first code block".
+    # If you did not use a tag, it would add it to the current section.
     # I didn't do that here since I want to print the code block after the following markdown string
     code_section("babies first code block", skip_blog_stuff=False)
     # this indicates that the following string should be rendered as markdown
     markdown_string
     """
-    in this blog post we are going to walk through the process of creating a blog post generator of python heavy code
+    in this blog post we are going to walk through the process of creating a markdown generator of python heavy code
     using python. The goal is to allow you to annotate your python code with markers and have it automatically
-    generate a blog post in markdown.
+    generate markdown in the specified way. I was trying to write a different blog post and I realized that I couldn't
+    find the tool I wanted to generate my blog post from within python code. So I decided to write it myself. 
+    
+    I then realized that this tool was far more interesting than the blog post I was trying to write. So here we are.
+    Writing a blog post about how to write a blog post generator from within said blog post generator. (Very meta :))
     """
     end_code("babies first code block")
     markdown_string
     """
-
-
 
     for example the above statement looked like this in my python code.
     """
@@ -251,15 +253,23 @@ if __name__ == '__main__':
 
     markdown_string
     """
-    The first challenge is how do we create flags that we can use to indicate that a section of code should be rendered
-    as markdown. The first idea that comes to mind is to use commentt flags for example # markdown_start and # markdown_end
-    and # code_start and # code_end. This would work but it would be a bit ugly and you wouldn't be able to pass arguments
-    to the flags easily. Then I realized that as long as I created dummy functions that took the arguments I wanted to pass
-    it would be possible to use actual python code as flags. We do this in the following fashion (sadly I had to actually
-    use regualar markdown for this section since you can't use the flags until you have defined them):
+    The first challenge is how do we create flags that we can use to indicate that a section of code
+    should be rendered as markdown. 
+    The first idea that comes to mind is to use comment flags for example # markdown_start and # markdown_end
+    and # code_start and # code_end.
+    This would work but it would be a bit ugly and you wouldn't be able to easily pass arguments
+    to the flags easily. 
+    Then it hit me, if I created dummy functions that took the arguments I wanted to pass it would be possible
+    to use actual python code as flags and get all of python's auto complete functionality.
+    We do this in the following fashion. Note: this is in another file.
     """
+    write_section('defined_functions')
+    markdown_string
     """
+    These functions do not do anything. They are just dummy functions that the user can use as flags. Since we don't
+    want these flags to affect the code we are writing. These flags only become active when we are generating the
+    markdown (which for the sake of your sanity should be done in a different file).
+    
     The next challenge is actually reading the code.
     """
     write_section("reading_code")
-    write_section('defined_functions')
