@@ -1,3 +1,5 @@
+The following is all generated from within the python code.
+
 # Table of Contents
 - [start](#start)
 
